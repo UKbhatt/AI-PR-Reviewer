@@ -1,42 +1,361 @@
-#root {
-  max-width: 1280px;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.container {
+  max-width: 900px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 20px;
+}
+
+header {
   text-align: center;
+  margin-bottom: 30px;
+  padding: 20px 0;
+  border-bottom: 2px solid #334155;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+header h1 {
+  font-size: 2.5em;
+  margin-bottom: 5px;
+  background: linear-gradient(135deg, #60a5fa, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+header p {
+  color: #94a3b8;
+  font-size: 0.9em;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.input-section {
+  background: #1e293b;
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  border: 1px solid #334155;
 }
 
-.card {
-  padding: 2em;
+.form-group {
+  margin-bottom: 15px;
 }
 
-.read-the-docs {
-  color: #888;
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: #cbd5e1;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 6px;
+  font-size: 1em;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+.form-group input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button {
+  border-radius: 8px;
+  border: none;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background: linear-gradient(135deg, #60a5fa, #34d399);
+  color: #0f172a;
+  cursor: pointer;
+  transition: opacity 0.25s, transform 0.2s;
+  width: 100%;
+  padding: 12px;
+  font-weight: 600;
+}
+
+button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submit-btn {
+  margin-top: 15px;
+}
+
+.error-message {
+  background: #7f1d1d;
+  color: #fecaca;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #dc2626;
+}
+
+.status-section {
+  background: #1e293b;
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  border: 1px solid #334155;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.status-header h3 {
+  font-size: 1.3em;
+  color: #60a5fa;
+}
+
+.status-header code {
+  background: #0f172a;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85em;
+  color: #94a3b8;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #0f172a;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #60a5fa, #34d399);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  text-align: center;
+  color: #cbd5e1;
+  font-size: 0.9em;
+}
+
+.results-section {
+  background: #1e293b;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+}
+
+.pr-summary {
+  margin-bottom: 30px;
+  border-bottom: 2px solid #334155;
+  padding-bottom: 20px;
+}
+
+.pr-summary h2 {
+  color: #e2e8f0;
+  margin-bottom: 15px;
+  font-size: 1.5em;
+}
+
+.pr-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.stat {
+  background: #0f172a;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+}
+
+.stat .label {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.85em;
+  margin-bottom: 5px;
+}
+
+.stat span:last-child {
+  display: block;
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.score-card {
+  display: flex;
+  justify-content: center;
+  margin: 30px 0;
+}
+
+.score-circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #60a5fa, #34d399);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.score-value {
+  font-size: 3em;
+  line-height: 1;
+}
+
+.score-label {
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+.summary-section,
+.recommendations-section {
+  margin-bottom: 25px;
+}
+
+.summary-section h3,
+.recommendations-section h3,
+.issues-section h3 {
+  color: #60a5fa;
+  margin-bottom: 12px;
+  font-size: 1.2em;
+}
+
+.summary-section p {
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.recommendations-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.recommendations-section li {
+  background: #0f172a;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border-left: 3px solid #34d399;
+  color: #e2e8f0;
+}
+
+.issues-section {
+  margin-bottom: 25px;
+}
+
+.issues-list {
+  display: grid;
+  gap: 12px;
+}
+
+.issue-card {
+  background: #0f172a;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  border: 1px solid #334155;
+}
+
+.issue-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.severity {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-weight: 700;
+  color: white;
+}
+
+.category {
+  background: #334155;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75em;
+  color: #cbd5e1;
+}
+
+.issue-card h4 {
+  color: #e2e8f0;
+  margin-bottom: 8px;
+  font-size: 1.05em;
+}
+
+.description {
+  color: #cbd5e1;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.file-path {
+  background: #1e293b;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.suggestion {
+  background: #1e293b;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #34d399;
+}
+
+.no-issues {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 1.2em;
+  color: #34d399;
+}
+
+.metadata {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #334155;
+  font-size: 0.85em;
+  color: #94a3b8;
+}
+
+.metadata p {
+  margin-bottom: 5px;
 }

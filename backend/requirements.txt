@@ -1,0 +1,47 @@
+# FastAPI and core dependencies
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+
+# Async and Celery
+celery
+redis
+flower
+
+# HTTP client
+httpx
+aiohttp
+
+# GitHub API
+PyGithub
+
+# LLM
+langchain
+langchain-community
+langgraph
+
+# Database
+sqlalchemy
+alembic
+
+# Utilities
+python-dotenv
+python-multipart
+python-jose[cryptography]
+
+# Logging and monitoring
+structlog
+
+# Testing
+# pytest==7.4.4
+# pytest-asyncio==0.23.3
+# pytest-cov==4.1.0
+# pytest-mock==3.12.0
+# httpx==0.26.0
+
+# Code quality
+black
+flake8
+mypy
+isort
