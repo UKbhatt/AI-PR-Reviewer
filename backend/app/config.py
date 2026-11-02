@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Security
     # Browser origins allowed to call the API. Set as a JSON list in .env,
     # e.g. CORS_ORIGINS=["http://localhost:5173","https://review.example.com"]
-    CORS_ORIGINS: List[str] = ["http://localhost:5173"]
+    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     # Fernet key used to encrypt per-request GitHub tokens before they are
     # queued through the broker. Must be identical for the API and the worker.
     # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
