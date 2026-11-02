@@ -1,7 +1,22 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import "./App.css";
 
 const API_BASE = "http://localhost:8000/api/v1";
+const RUNNING_STATUSES = ["submitting", "pending", "started", "processing", "retry"];
+const STATUS_TITLES = { success: "Analysis complete", failure: "Analysis failed" };
+const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3 };
+
+const parseRepo = (input) => {
+  const trimmed = input.trim();
+  if (!trimmed.includes("github.com")) return trimmed;
+  const parts = trimmed.split("github.com/")[1]?.split("/") ?? [];
+  return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : trimmed;
+};
+
+const scoreTone = (score) => (score >= 80 ? "good" : score >= 60 ? "warn" : "bad");
+
+const bySeverity = (a, b) =>
+  (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9);
 
 function App() {
   const [repoUrl, setRepoUrl] = useState("");
@@ -14,273 +29,233 @@ function App() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const pollRef = useRef(null);
+  const isRunning = RUNNING_STATUSES.includes(status);
 
-  const parseRepo = (input) => {
+  useEffect(() => () => clearInterval(pollRef.current), []);
+
+  const fetchResults = async (id) => {
     try {
-      const trimmed = input.trim();
-      if (!trimmed) return "";
-      if (trimmed.includes("github.com")) {
-        const parts = trimmed.split("github.com/")[1].split("/");
-        if (parts.length >= 2) return `${parts[0]}/${parts[1]}`;
+      const res = await fetch(`${API_BASE}/results/${id}`);
+      if (!res.ok) {
+        setError(`Could not load results (${res.status})`);
+        return;
       }
-      return trimmed;
+      setResults(await res.json());
     } catch (e) {
-      return input;
+      setError(`Could not load results: ${e.message}`);
     }
   };
 
   const startPolling = (id) => {
-    if (pollRef.current) clearInterval(pollRef.current);
+    clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
         const res = await fetch(`${API_BASE}/status/${id}`);
-        if (!res.ok) {
-          console.error("Status fetch failed");
-          return;
-        }
+        if (!res.ok) return;
         const data = await res.json();
         setStatus(data.status);
         setProgress(data.progress || 0);
         setStatusMessage(data.message || "");
         setError(data.error || null);
-
         if (data.status === "success") {
           clearInterval(pollRef.current);
-          setTimeout(() => fetchResults(id), 500);
+          fetchResults(id);
         }
-
-        if (data.status === "failure") {
-          clearInterval(pollRef.current);
-        }
+        if (data.status === "failure") clearInterval(pollRef.current);
       } catch (e) {
         console.error("Poll error:", e);
       }
     }, 2000);
   };
 
-  const fetchResults = async (id) => {
-    try {
-      const res = await fetch(`${API_BASE}/results/${id}`);
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Results fetch failed:", text);
-        return;
-      }
-      const data = await res.json();
-      setResults(data);
-    } catch (e) {
-      console.error("Results error:", e);
-    }
-  };
-
-  const handleSubmit = async () => {
-    setStatus("submitting");
-    setProgress(0);
-    setStatusMessage("Submitting analysis request...");
-    setError(null);
-    setResults(null);
-    
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     const repo = parseRepo(repoUrl);
     if (!repo || !prNumber) {
-      setError("Please provide repository (owner/repo or GitHub URL) and PR number.");
-      setStatus(null);
+      setError("Enter a repository (owner/repo or GitHub URL) and a PR number.");
       return;
     }
+    setStatus("submitting");
+    setProgress(0);
+    setStatusMessage("Submitting analysis request…");
+    setError(null);
+    setResults(null);
+    setTaskId(null);
 
     try {
       const response = await fetch(`${API_BASE}/analyze-pr`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          repo: repo,
+          repo,
           pr_number: Number(prNumber),
           github_token: githubToken || null,
         }),
       });
-
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Request failed");
+        const body = await response.json().catch(() => null);
+        const detail = body?.detail;
+        throw new Error(
+          Array.isArray(detail) ? detail.map((d) => d.msg).join("; ") : detail || `HTTP ${response.status}`
+        );
       }
-
       const data = await response.json();
       setTaskId(data.task_id);
       setStatus(data.status);
       setStatusMessage(data.message);
       startPolling(data.task_id);
     } catch (e) {
-      console.error(e);
-      setError("Failed to submit analysis request: " + e.message);
+      setError(e.message);
       setStatus(null);
     }
   };
 
-  const getSeverityColor = (severity) => {
-    const colors = {
-      critical: "#dc3545",
-      high: "#fd7e14",
-      medium: "#ffc107",
-      low: "#28a745"
-    };
-    return colors[severity] || "#6c757d";
-  };
+  const issues = results ? [...results.issues].sort(bySeverity) : [];
 
   return (
-    <div className="container">
-      <header>
-        <h1>🤖 AI Code Review Agent</h1>
-        <p>Powered by Ollama llama3</p>
+    <div className="app">
+      <header className="hero">
+        <div className="brand-mark">{"</>"}</div>
+        <div>
+          <h1>AI Code Review</h1>
+          <p>Local pull request analysis · Ollama llama3</p>
+        </div>
       </header>
 
-      <div className="input-section">
-        <div className="form-group">
-          <label>GitHub Repository</label>
-          <input
-            placeholder="owner/repo or https://github.com/owner/repo"
-            value={repoUrl}
-            onChange={(e) => setRepoUrl(e.target.value)}
-            disabled={!!taskId}
-          />
+      <form className="card form-card" onSubmit={handleSubmit}>
+        <div className="form-grid">
+          <label className="field field-wide">
+            <span>Repository</span>
+            <input
+              placeholder="owner/repo or https://github.com/owner/repo"
+              value={repoUrl}
+              onChange={(e) => setRepoUrl(e.target.value)}
+              disabled={isRunning}
+            />
+          </label>
+          <label className="field">
+            <span>PR number</span>
+            <input
+              type="number"
+              min="1"
+              placeholder="42"
+              value={prNumber}
+              onChange={(e) => setPrNumber(e.target.value)}
+              disabled={isRunning}
+            />
+          </label>
+          <label className="field">
+            <span>GitHub token <em>optional</em></span>
+            <input
+              type="password"
+              placeholder="ghp_…"
+              autoComplete="off"
+              value={githubToken}
+              onChange={(e) => setGithubToken(e.target.value)}
+              disabled={isRunning}
+            />
+          </label>
         </div>
-
-        <div className="form-group">
-          <label>PR Number</label>
-          <input
-            type="number"
-            placeholder="1"
-            value={prNumber}
-            onChange={(e) => setPrNumber(e.target.value)}
-            disabled={!!taskId}
-          />
-        </div>
-
-        <div className="form-group">
-          <label>GitHub Token (optional)</label>
-          <input
-            type="password"
-            placeholder="ghp_..."
-            value={githubToken}
-            onChange={(e) => setGithubToken(e.target.value)}
-            disabled={!!taskId}
-          />
-        </div>
-
-        <button onClick={handleSubmit} disabled={!!taskId} className="submit-btn">
-          Analyze PR
+        <button type="submit" className="primary" disabled={isRunning}>
+          {isRunning ? <><span className="spinner" /> Analyzing…</> : "Analyze PR"}
         </button>
-      </div>
+      </form>
 
       {error && (
-        <div className="error-message">
-          <strong>Error:</strong> {error}
+        <div className="alert" role="alert">
+          <strong>Error</strong>
+          <span>{error}</span>
         </div>
       )}
 
       {taskId && (
-        <div className="status-section">
-          <div className="status-header">
-            <h3>Analysis in Progress</h3>
-            <code>{taskId}</code>
+        <section className={`card status-card status-${status}`}>
+          <div className="status-row">
+            <h2>{STATUS_TITLES[status] ?? "Analysis in progress"}</h2>
+            <span className={`pill pill-${status}`}>{status}</span>
           </div>
-
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+          <div className="progress" aria-valuenow={progress} role="progressbar">
+            <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
-          <p className="progress-text">{progress}% - {statusMessage}</p>
-        </div>
+          <p className="muted">{progress}% · {statusMessage}</p>
+        </section>
       )}
 
       {results && (
-        <div className="results-section">
-          <div className="pr-summary">
-            <h2>{results.pr_summary?.title || "Analysis Results"}</h2>
-            <div className="pr-stats">
-              <div className="stat">
-                <span className="label">Author:</span>
-                <span>{results.pr_summary?.author}</span>
-              </div>
-              <div className="stat">
-                <span className="label">Files Changed:</span>
-                <span>{results.pr_summary?.files_changed}</span>
-              </div>
-              <div className="stat">
-                <span className="label">Additions:</span>
-                <span style={{ color: "#28a745" }}>+{results.pr_summary?.additions}</span>
-              </div>
-              <div className="stat">
-                <span className="label">Deletions:</span>
-                <span style={{ color: "#dc3545" }}>-{results.pr_summary?.deletions}</span>
-              </div>
+        <section className="card results">
+          <div className="pr-head">
+            <h2>{results.pr_summary?.title || "Analysis results"}</h2>
+            <p className="muted">
+              by <strong>{results.pr_summary?.author}</strong>
+              <span className="dot" />
+              {results.pr_summary?.files_changed} file{results.pr_summary?.files_changed === 1 ? "" : "s"} changed
+              <span className="dot" />
+              <span className="add">+{results.pr_summary?.additions}</span>{" "}
+              <span className="del">−{results.pr_summary?.deletions}</span>
+            </p>
+          </div>
+
+          <div className="overview">
+            <div className={`score score-${scoreTone(results.overall_score)}`}>
+              <span className="score-value">{Math.round(results.overall_score)}</span>
+              <span className="score-label">Quality score</span>
+            </div>
+            <div className="overview-text">
+              <h3>Summary</h3>
+              <p>{results.summary}</p>
             </div>
           </div>
 
-          <div className="score-card">
-            <div className="score-circle">
-              <span className="score-value">{results.overall_score}</span>
-              <span className="score-label">Code Quality</span>
-            </div>
-          </div>
-
-          <div className="summary-section">
-            <h3>Summary</h3>
-            <p>{results.summary}</p>
-          </div>
-
-          {results.recommendations && results.recommendations.length > 0 && (
-            <div className="recommendations-section">
+          {results.recommendations?.length > 0 && (
+            <div className="block">
               <h3>Recommendations</h3>
-              <ul>
+              <ol className="recommendations">
                 {results.recommendations.map((rec, idx) => (
                   <li key={idx}>{rec}</li>
                 ))}
-              </ul>
+              </ol>
             </div>
           )}
 
-          {results.issues && results.issues.length > 0 && (
-            <div className="issues-section">
-              <h3>Issues Found ({results.issues.length})</h3>
-              <div className="issues-list">
-                {results.issues.map((issue, idx) => (
-                  <div key={idx} className="issue-card" style={{ borderLeftColor: getSeverityColor(issue.severity) }}>
-                    <div className="issue-header">
-                      <span className="severity" style={{ backgroundColor: getSeverityColor(issue.severity) }}>
-                        {issue.severity.toUpperCase()}
-                      </span>
-                      <span className="category">{issue.category}</span>
+          <div className="block">
+            <h3>
+              Issues <span className="count">{issues.length}</span>
+            </h3>
+            {issues.length === 0 ? (
+              <p className="empty">No issues found in this pull request.</p>
+            ) : (
+              <ul className="issues">
+                {issues.map((issue, idx) => (
+                  <li key={idx} className={`issue severity-${issue.severity}`}>
+                    <div className="issue-tags">
+                      <span className="pill pill-severity">{issue.severity}</span>
+                      <span className="pill pill-category">{issue.category}</span>
+                      {issue.file_path && (
+                        <code className="path">
+                          {issue.file_path}
+                          {issue.line_number ? `:${issue.line_number}` : ""}
+                        </code>
+                      )}
                     </div>
                     <h4>{issue.title}</h4>
-                    <p className="description">{issue.description}</p>
-                    {issue.file_path && (
-                      <p className="file-path">
-                        <strong>File:</strong> {issue.file_path}
-                        {issue.line_number && ` (Line ${issue.line_number})`}
-                      </p>
-                    )}
+                    <p>{issue.description}</p>
                     {issue.suggestion && (
                       <p className="suggestion">
-                        <strong>Suggestion:</strong> {issue.suggestion}
+                        <strong>Suggestion</strong> {issue.suggestion}
                       </p>
                     )}
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {(!results.issues || results.issues.length === 0) && (
-            <div className="no-issues">
-              <p>✅ No issues found!</p>
-            </div>
-          )}
-
-          <div className="metadata">
-            <p>Analyzed at: {new Date(results.analyzed_at).toLocaleString()}</p>
-            <p>Processing time: {results.processing_time?.toFixed(2)}s</p>
+              </ul>
+            )}
           </div>
-        </div>
+
+          <footer className="meta">
+            <span>Analyzed {new Date(results.analyzed_at).toLocaleString()}</span>
+            <span>{results.processing_time?.toFixed(1)}s processing</span>
+            <code>{taskId}</code>
+          </footer>
+        </section>
       )}
     </div>
   );

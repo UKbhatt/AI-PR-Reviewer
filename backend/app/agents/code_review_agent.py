@@ -57,7 +57,7 @@ class CodeReviewAgent:
             return pr_details
         except Exception as e:
             logger.error(f"Failed to fetch PR metadata: {e}")
-            raise AgentException(f"Failed to fetch PR metadata: {str(e)}")
+            raise AgentException(f"Failed to fetch PR metadata: {str(e)}") from e
     
     def fetch_pr_files(self, repo: str, pr_number: int) -> List[Dict[str, Any]]:
         """Fetch list of files changed in PR."""
@@ -68,7 +68,7 @@ class CodeReviewAgent:
             return files
         except Exception as e:
             logger.error(f"Failed to fetch PR files: {e}")
-            raise AgentException(f"Failed to fetch PR files: {str(e)}")
+            raise AgentException(f"Failed to fetch PR files: {str(e)}") from e
     
     def analyze_diff(
         self, 
@@ -95,7 +95,7 @@ class CodeReviewAgent:
             
         except Exception as e:
             logger.error(f"Diff analysis failed: {e}", exc_info=True)
-            raise AgentException(f"Diff analysis failed: {str(e)}")
+            raise AgentException(f"Diff analysis failed: {str(e)}") from e
     
     def analyze_individual_files(
         self, 
@@ -157,7 +157,7 @@ class CodeReviewAgent:
             
         except Exception as e:
             logger.error(f"File analysis failed: {e}", exc_info=True)
-            raise AgentException(f"File analysis failed: {str(e)}")
+            raise AgentException(f"File analysis failed: {str(e)}") from e
     
     def generate_summary(
         self, 
@@ -175,7 +175,7 @@ class CodeReviewAgent:
             
         except Exception as e:
             logger.error(f"Summary generation failed: {e}", exc_info=True)
-            raise AgentException(f"Summary generation failed: {str(e)}")
+            raise AgentException(f"Summary generation failed: {str(e)}") from e
     
     def execute(self, repo: str, pr_number: int) -> Dict[str, Any]:
         """Execute the complete code review analysis."""
@@ -221,6 +221,8 @@ class CodeReviewAgent:
             
             # Compile final results
             results = {
+                "repo": repo,
+                "pr_number": pr_number,
                 "pr_summary": {
                     "title": pr_details.get("title", ""),
                     "description": pr_details.get("description", ""),
@@ -242,9 +244,11 @@ class CodeReviewAgent:
             logger.info(f"Analysis complete: {len(unique_issues)} issues, score: {results['overall_score']}")
             return results
             
+        except AgentException:
+            raise
         except Exception as e:
             logger.error(f"Analysis execution failed: {e}")
-            raise AgentException(f"Analysis failed: {str(e)}")
+            raise AgentException(f"Analysis failed: {str(e)}") from e
         finally:
             # Cleanup
             self.github_service.close()

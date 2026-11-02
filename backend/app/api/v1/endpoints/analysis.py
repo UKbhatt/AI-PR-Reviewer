@@ -34,8 +34,10 @@ async def analyze_pr(request: AnalyzePRRequest) -> AnalyzePRResponse:
     to check status and retrieve results.
     """
     try:
-        # Check cache first
-        cached_result = await cache_service.get_analysis(request.repo, request.pr_number)
+        # Authenticated requests may see private repos, so they never read or write the shared cache.
+        cached_result = None
+        if not request.github_token:
+            cached_result = await cache_service.get_analysis(request.repo, request.pr_number)
         
         if cached_result:
             logger.info(f"Returning cached result for {request.repo}#{request.pr_number}")
@@ -266,7 +268,7 @@ async def get_task_results(task_id: str) -> AnalysisResults:
             )
         
         # Cache the results
-        if 'pr_summary' in results:
+        if 'pr_summary' in results and not results.get('authenticated'):
             repo = f"{results.get('repo', 'unknown')}"
             pr_number = results.get('pr_number', 0)
             if repo != 'unknown' and pr_number > 0:

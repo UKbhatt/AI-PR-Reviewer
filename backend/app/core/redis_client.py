@@ -15,19 +15,7 @@ class RedisClient:
         self._client: Optional[Redis] = None
 
     async def connect(self) -> None:
-        """Connect to Redis Cloud.
-
-        For `rediss://` URLs this will try to provide an SSL context first;
-        if the redis driver does not accept the `ssl` kwarg it will try
-        `ssl_cert_reqs=ssl.CERT_REQUIRED`. If both attempts fail it will
-        attempt an insecure fallback (swap `rediss://` -> `redis://`) and
-        otherwise continue without Redis (degraded mode).
-        """
-        if not settings.REDIS_URL:
-            logger.info("Redis URL not provided; skipping Redis initialization")
-            return
-
-        # Use the normalized DSN from settings (may include ssl_cert_reqs)
+        """Connect to Redis using settings.redis_dsn; on failure continue without Redis (degraded mode)."""
         url = settings.redis_dsn
 
         # Primary connection attempt
@@ -68,34 +56,10 @@ class RedisClient:
 
             if self._client:
                 await self._client.ping()
-            logger.info("✅ Redis Cloud connection established successfully")
-            return
+            logger.info("✅ Redis connection established successfully")
         except Exception as e:
-            logger.error(f"Initial Redis connection attempt failed: {e}")
-
-        # Insecure fallback: convert rediss:// -> redis:// and try again
-        try:
-            if url.startswith("redis://"):
-                fallback = "redis://" + url[len("redis://"):]
-                logger.info("Attempting insecure fallback to Redis (redis://)")
-                self._client = aioredis.from_url(
-                    fallback,
-                    encoding="utf-8",
-                    decode_responses=True,
-                    max_connections=50,
-                )
-                if self._client:
-                    await self._client.ping()
-                logger.warning(
-                    "Connected to Redis using insecure fallback (redis://). "
-                    "This disables TLS and should not be used in production."
-                )
-                return
-        except Exception as e2:
-            logger.error(f"Fallback Redis connection failed: {e2}")
-
-        logger.error("❌ Failed to connect to Redis Cloud; continuing without Redis")
-        self._client = None
+            logger.error(f"❌ Redis connection failed ({e}); continuing without Redis")
+            self._client = None
 
     async def disconnect(self) -> None:
         """Close Redis connection."""

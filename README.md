@@ -151,7 +151,7 @@ npm install
 
 ### Step 5: Configure Environment (Optional)
 
-Create `backend/.env` file:
+Create `backend/app/.env` file (the settings loader reads it from the `app` package, not from `backend/`):
 
 ```bash
 # Redis Configuration (local)
@@ -285,7 +285,7 @@ Once analysis completes (30-60 seconds), you'll see:
 ### Example Usage
 
 1. Repository: `TheAlgorithms/Python`
-2. PR Number: `14017`
+2. PR Number: `15685`
 3. Click "Analyze PR"
 4. Wait for analysis (~45 seconds)
 5. View detailed issues and recommendations
@@ -409,7 +409,7 @@ GET /api/v1/health
 
 ## ⚙️ Configuration
 
-### Backend Configuration (`backend/.env`)
+### Backend Configuration (`backend/app/.env`)
 
 ```bash
 # ============= Redis =============
@@ -430,7 +430,7 @@ GITHUB_TOKEN=ghp_your_token_here  # Optional
 
 # ============= Security =============
 # Browser origins allowed to call the API (JSON list)
-CORS_ORIGINS=["http://localhost:5173"]
+CORS_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173"]
 # Required to accept a GitHub token from the UI. Same value for API and worker.
 # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 TOKEN_ENCRYPTION_KEY=
@@ -614,8 +614,8 @@ pull-request-reviewer/
 │   │   ├── utils/
 │   │   │   └── exceptions.py             # Custom exceptions
 │   │   ├── config.py                     # Settings
-│   │   └── main.py                       # FastAPI app
-│   ├── .env                              # Environment variables
+│   │   ├── main.py                       # FastAPI app
+│   │   └── .env                          # Environment variables (gitignored)
 │   └── requirements.txt                  # Python dependencies
 │
 ├── src/
