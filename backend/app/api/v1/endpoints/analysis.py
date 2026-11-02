@@ -12,7 +12,8 @@ from app.models.responses import (
 from app.tasks.analysis_tasks import analyze_pr_task
 from app.core.celery_app import celery_app
 from app.services.cache_service import cache_service
-from app.utils.exceptions import TaskNotFoundException
+from app.core.token_crypto import encrypt_token
+from app.utils.exceptions import TaskNotFoundException, ValidationException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -46,10 +47,16 @@ async def analyze_pr(request: AnalyzePRRequest) -> AnalyzePRResponse:
                     message="Analysis already completed (cached result available)"
                 )
         
+        # Never put the raw token on the broker; the worker decrypts it.
+        try:
+            encrypted_token = encrypt_token(request.github_token)
+        except ValidationException as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
         # Submit task to Celery
         try:
             task = analyze_pr_task.apply_async(
-                args=[request.repo, request.pr_number, request.github_token],
+                args=[request.repo, request.pr_number, encrypted_token],
                 queue='analysis'
             )
             

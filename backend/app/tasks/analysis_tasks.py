@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 from typing import Optional
 from app.core.celery_app import celery_app
+from app.core.token_crypto import decrypt_token
 
 from app.agents.code_review_agent import CodeReviewAgent
 from app.config import settings
@@ -46,8 +47,8 @@ def analyze_pr_task(
     Args:
         repo: Repository in format 'owner/repo'
         pr_number: Pull request number
-        github_token: Optional GitHub token for authentication
-    
+        github_token: Optional GitHub token, encrypted with TOKEN_ENCRYPTION_KEY by the API
+
     Returns:
         Dictionary containing analysis results
     """
@@ -68,7 +69,7 @@ def analyze_pr_task(
     
     try:
         # Initialize agent
-        agent = CodeReviewAgent(github_token=github_token)
+        agent = CodeReviewAgent(github_token=decrypt_token(github_token))
         
         # Create callback to update task state during execution
         original_update = agent.update_progress

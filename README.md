@@ -431,6 +431,9 @@ GITHUB_TOKEN=ghp_your_token_here  # Optional
 # ============= Security =============
 # Browser origins allowed to call the API (JSON list)
 CORS_ORIGINS=["http://localhost:5173"]
+# Required to accept a GitHub token from the UI. Same value for API and worker.
+# Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+TOKEN_ENCRYPTION_KEY=
 
 # ============= Application =============
 DEBUG=False
