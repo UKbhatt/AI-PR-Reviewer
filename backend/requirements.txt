@@ -16,6 +16,9 @@ aiohttp
 # GitHub API
 PyGithub
 
+# Security (encrypts per-request GitHub tokens before they reach the broker)
+cryptography
+
 # LLM
 langchain
 langchain-community

@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
-from typing import Optional
+from typing import List, Optional
 from pathlib import Path
 
 
@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     WORKERS: int = 4
+
+    # Security
+    # Browser origins allowed to call the API. Set as a JSON list in .env,
+    # e.g. CORS_ORIGINS=["http://localhost:5173","https://review.example.com"]
+    CORS_ORIGINS: List[str] = ["http://localhost:5173"]
+    # Fernet key used to encrypt per-request GitHub tokens before they are
+    # queued through the broker. Must be identical for the API and the worker.
+    # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    TOKEN_ENCRYPTION_KEY: Optional[str] = None
 
     # Redis Configuration
     REDIS_URL: Optional[str] = None
