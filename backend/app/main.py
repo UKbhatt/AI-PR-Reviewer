@@ -54,10 +54,10 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=False,  # the API uses no cookies or auth headers
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 # Add GZip middleware

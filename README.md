@@ -428,6 +428,10 @@ OLLAMA_TIMEOUT=300  # seconds
 # ============= GitHub =============
 GITHUB_TOKEN=ghp_your_token_here  # Optional
 
+# ============= Security =============
+# Browser origins allowed to call the API (JSON list)
+CORS_ORIGINS=["http://localhost:5173"]
+
 # ============= Application =============
 DEBUG=False
 LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR

@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
-from typing import Optional
+from typing import List, Optional
 from pathlib import Path
 
 
@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     WORKERS: int = 4
+
+    # Security
+    # Browser origins allowed to call the API. Set as a JSON list in .env,
+    # e.g. CORS_ORIGINS=["http://localhost:5173","https://review.example.com"]
+    CORS_ORIGINS: List[str] = ["http://localhost:5173"]
 
     # Redis Configuration
     REDIS_URL: Optional[str] = None
